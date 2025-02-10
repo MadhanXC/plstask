@@ -3,10 +3,12 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebase';
 
 export async function compressImage(file: File) {
-  const options = {
-    maxSizeMB: 1,
-    maxWidthOrHeight: 1920,
-    useWebWorker: true
+ const options = {
+    maxSizeMB: 2, // Increased from 1MB to 2MB
+    maxWidthOrHeight: 2048, // Increased from 1920 to 2048
+    useWebWorker: true,
+    initialQuality: 0.8, // Added initial quality setting (0-1)
+    preserveExif: true // Preserve image metadata
   };
 
   try {
