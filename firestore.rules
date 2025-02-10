@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn() && 
+        request.auth.uid == userId &&
+        request.resource.data.keys().hasAll(['email', 'role', 'createdAt']) &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.role in ['user', 'admin'];
+      allow update: if isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['email', 'name']);
+    }
+    
+    // Products collection
+    match /products/{productId} {
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        resource.data.userId == request.auth.uid
+      );
+      
+      allow create: if isSignedIn() && 
+        request.resource.data.keys().hasAll(['name', 'images', 'userId', 'uploaderEmail', 'createdAt', 'status']) &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.uploaderEmail == request.auth.token.email &&
+        (
+          isAdmin() || 
+          request.resource.data.status == 'unapproved'
+        );
+      
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        (
+          resource.data.userId == request.auth.uid &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+        )
+      );
+      
+      // Only allow admins to delete products
+      allow delete: if isSignedIn() && isAdmin();
+    }
+  }
+}
