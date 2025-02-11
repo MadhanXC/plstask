@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, MutableRefObject } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -76,9 +76,7 @@ export function TaskImageUpload({
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Images</h3>
-      
+    <div className="space-y-3">
       <Select
         value={imageSource}
         onValueChange={(value) => {
@@ -109,35 +107,31 @@ export function TaskImageUpload({
       </Select>
       
       {imageSource === "upload" && (
-        <div className="mt-2">
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            multiple
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-            disabled={isDisabled}
-          />
-        </div>
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          multiple
+          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+          disabled={isDisabled}
+        />
       )}
       
       {imageSource === "camera" && (
-        <div className="mt-2">
-          <CameraCapture
-            videoRef={videoRef}
-            canvasRef={canvasRef}
-            streamRef={streamRef}
-            isCameraActive={isCameraActive}
-            setIsCameraActive={setIsCameraActive}
-            onPhotoCapture={(file) => {
-              onImagesChange([...taskImages, {
-                file,
-                preview: URL.createObjectURL(file)
-              }]);
-            }}
-            disabled={isDisabled}
-          />
-        </div>
+        <CameraCapture
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          streamRef={streamRef}
+          isCameraActive={isCameraActive}
+          setIsCameraActive={setIsCameraActive}
+          onPhotoCapture={(file) => {
+            onImagesChange([...taskImages, {
+              file,
+              preview: URL.createObjectURL(file)
+            }]);
+          }}
+          disabled={isDisabled}
+        />
       )}
 
       <ImagePreview
