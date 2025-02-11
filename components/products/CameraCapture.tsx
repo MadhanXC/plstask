@@ -2,7 +2,7 @@
 
 import { MutableRefObject, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Maximize2, Minimize2, X } from "lucide-react"; // Added X import
+import { Camera, Maximize2, Minimize2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CameraCaptureProps {
@@ -116,7 +116,7 @@ export function CameraCapture({
             onPhotoCapture(file);
             stopCamera();
           }
-        }, 'image/jpeg', 0.9); // Increased quality to 0.9
+        }, 'image/jpeg', 0.9);
       }
     }
   };
@@ -169,17 +169,13 @@ export function CameraCapture({
 
   return (
     <div 
-      className="space-y-4" 
       ref={containerRef}
-      style={{
-        width: '100%',
-        height: isFullscreen.current ? '100vh' : 'auto'
-      }}
+      className={`relative rounded-lg overflow-hidden bg-gray-100 ${isFullscreen.current ? 'fixed inset-0 z-50' : ''}`}
     >
-      <div className="relative rounded-lg overflow-hidden bg-gray-100 h-full">
+      <div className={`${!isCameraActive ? 'h-24' : 'h-full'}`}>
         <video
           ref={videoRef}
-          className={`w-full h-full object-cover ${isFullscreen.current ? 'rounded-none' : ''}`}
+          className={`w-full h-full object-cover ${isFullscreen.current ? 'rounded-none' : 'rounded-lg'}`}
           style={{ 
             display: isCameraActive ? 'block' : 'none',
             maxHeight: isFullscreen.current ? '100vh' : '75vh'
@@ -191,51 +187,53 @@ export function CameraCapture({
           ref={canvasRef}
           className="hidden"
         />
-        {!isCameraActive ? (
-          <div className="p-8 text-center">
+        {!isCameraActive && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <Button 
               onClick={handleImageCapture} 
               variant="outline" 
-              className="w-full"
+              className="w-full max-w-[200px]"
               disabled={disabled}
             >
               <Camera className="mr-2 h-4 w-4" />
               Open Camera
             </Button>
           </div>
-        ) : (
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent">
-            <div className="flex justify-between items-center gap-4 max-w-lg mx-auto">
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="bg-white hover:bg-gray-100"
-                onClick={toggleFullscreen}
-              >
-                {isFullscreen.current ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-              </Button>
-              <Button 
-                onClick={capturePhoto}
-                className="flex-1 bg-white hover:bg-gray-100 text-black"
-              >
-                Take Photo
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="bg-white hover:bg-gray-100"
-                onClick={stopCamera}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         )}
       </div>
+
+      {isCameraActive && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent">
+          <div className="flex justify-between items-center gap-4 max-w-lg mx-auto">
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="bg-white hover:bg-gray-100"
+              onClick={toggleFullscreen}
+            >
+              {isFullscreen.current ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
+            <Button 
+              onClick={capturePhoto}
+              className="flex-1 bg-white hover:bg-gray-100 text-black"
+            >
+              Take Photo
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="bg-white hover:bg-gray-100"
+              onClick={stopCamera}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
