@@ -76,7 +76,7 @@ export function ProductImageUpload({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Select
         value={imageSource}
         onValueChange={(value) => {
@@ -107,41 +107,39 @@ export function ProductImageUpload({
       </Select>
       
       {imageSource === "upload" && (
-        <div className="mt-2">
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            multiple
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-            disabled={isDisabled}
-          />
-        </div>
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          multiple
+          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+          disabled={isDisabled}
+        />
       )}
       
       {imageSource === "camera" && (
-        <div className="mt-2">
-          <CameraCapture
-            videoRef={videoRef}
-            canvasRef={canvasRef}
-            streamRef={streamRef}
-            isCameraActive={isCameraActive}
-            setIsCameraActive={setIsCameraActive}
-            onPhotoCapture={(file) => {
-              onImagesChange([...productImages, {
-                file,
-                preview: URL.createObjectURL(file)
-              }]);
-            }}
-            disabled={isDisabled}
-          />
-        </div>
+        <CameraCapture
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          streamRef={streamRef}
+          isCameraActive={isCameraActive}
+          setIsCameraActive={setIsCameraActive}
+          onPhotoCapture={(file) => {
+            onImagesChange([...productImages, {
+              file,
+              preview: URL.createObjectURL(file)
+            }]);
+          }}
+          disabled={isDisabled}
+        />
       )}
 
       <ImagePreview
         existingImages={existingImages}
         newImages={productImages}
         onRemove={isDisabled ? undefined : removeImage}
+        disabled={isDisabled}
+        maxImages={5}
       />
     </div>
   );
