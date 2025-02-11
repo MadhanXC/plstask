@@ -1,8 +1,8 @@
 "use client";
 
-import { MutableRefObject, useRef } from "react";
+import { MutableRefObject, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Maximize2, Minimize2 } from "lucide-react";
+import { Camera, Maximize2, Minimize2, X } from "lucide-react"; // Added X import
 import { useToast } from "@/hooks/use-toast";
 
 interface CameraCaptureProps {
@@ -27,6 +27,27 @@ export function CameraCapture({
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const isFullscreen = useRef(false);
+
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      isFullscreen.current = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).msFullscreenElement
+      );
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const handleImageCapture = async () => {
     try {
@@ -56,8 +77,10 @@ export function CameraCapture({
         await videoRef.current.play();
         setIsCameraActive(true);
         
-        // Automatically enter fullscreen mode
-        toggleFullscreen();
+        // Request fullscreen after a short delay to ensure video is playing
+        setTimeout(() => {
+          toggleFullscreen();
+        }, 100);
       }
     } catch (error: any) {
       let errorMessage = "Could not access camera";
@@ -122,7 +145,6 @@ export function CameraCapture({
         } else if ((containerRef.current as any).msRequestFullscreen) {
           await (containerRef.current as any).msRequestFullscreen();
         }
-        isFullscreen.current = true;
       } else {
         exitFullscreen();
       }
@@ -132,7 +154,7 @@ export function CameraCapture({
   };
 
   const exitFullscreen = () => {
-    if (isFullscreen.current) {
+    try {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if ((document as any).webkitExitFullscreen) {
@@ -140,19 +162,27 @@ export function CameraCapture({
       } else if ((document as any).msExitFullscreen) {
         (document as any).msExitFullscreen();
       }
-      isFullscreen.current = false;
+    } catch (error) {
+      console.error('Error exiting fullscreen:', error);
     }
   };
 
   return (
-    <div className="space-y-4" ref={containerRef}>
-      <div className="relative rounded-lg overflow-hidden bg-gray-100">
+    <div 
+      className="space-y-4" 
+      ref={containerRef}
+      style={{
+        width: '100%',
+        height: isFullscreen.current ? '100vh' : 'auto'
+      }}
+    >
+      <div className="relative rounded-lg overflow-hidden bg-gray-100 h-full">
         <video
           ref={videoRef}
-          className="w-full aspect-[4/3] object-cover"
+          className={`w-full h-full object-cover ${isFullscreen.current ? 'rounded-none' : ''}`}
           style={{ 
             display: isCameraActive ? 'block' : 'none',
-            maxHeight: '100vh'
+            maxHeight: isFullscreen.current ? '100vh' : '75vh'
           }}
           playsInline
           autoPlay
@@ -175,7 +205,7 @@ export function CameraCapture({
           </div>
         ) : (
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent">
-            <div className="flex justify-between items-center gap-4">
+            <div className="flex justify-between items-center gap-4 max-w-lg mx-auto">
               <Button 
                 variant="outline" 
                 size="icon"
