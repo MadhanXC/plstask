@@ -1,8 +1,8 @@
 "use client";
 
-import { MutableRefObject } from "react";
+import { MutableRefObject, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera } from "lucide-react";
+import { Camera, Maximize2, Minimize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CameraCaptureProps {
@@ -12,6 +12,7 @@ interface CameraCaptureProps {
   isCameraActive: boolean;
   setIsCameraActive: (active: boolean) => void;
   onPhotoCapture: (file: File) => void;
+  disabled?: boolean;
 }
 
 export function CameraCapture({
@@ -20,22 +21,32 @@ export function CameraCapture({
   streamRef,
   isCameraActive,
   setIsCameraActive,
-  onPhotoCapture
+  onPhotoCapture,
+  disabled
 }: CameraCaptureProps) {
   const { toast } = useToast();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isFullscreen = useRef(false);
 
   const handleImageCapture = async () => {
     try {
       // First try the environment-facing camera
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 2048 },
+            height: { ideal: 1536 }
+          }
         });
         streamRef.current = stream;
       } catch {
         // If environment camera fails, try any available camera
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true
+          video: {
+            width: { ideal: 2048 },
+            height: { ideal: 1536 }
+          }
         });
         streamRef.current = stream;
       }
@@ -44,6 +55,9 @@ export function CameraCapture({
         videoRef.current.srcObject = streamRef.current;
         await videoRef.current.play();
         setIsCameraActive(true);
+        
+        // Automatically enter fullscreen mode
+        toggleFullscreen();
       }
     } catch (error: any) {
       let errorMessage = "Could not access camera";
@@ -79,7 +93,7 @@ export function CameraCapture({
             onPhotoCapture(file);
             stopCamera();
           }
-        }, 'image/jpeg', 0.8);
+        }, 'image/jpeg', 0.9); // Increased quality to 0.9
       }
     }
   };
@@ -93,16 +107,55 @@ export function CameraCapture({
       videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
+    exitFullscreen();
+  };
+
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+
+    try {
+      if (!isFullscreen.current) {
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        } else if ((containerRef.current as any).webkitRequestFullscreen) {
+          await (containerRef.current as any).webkitRequestFullscreen();
+        } else if ((containerRef.current as any).msRequestFullscreen) {
+          await (containerRef.current as any).msRequestFullscreen();
+        }
+        isFullscreen.current = true;
+      } else {
+        exitFullscreen();
+      }
+    } catch (error) {
+      console.error('Error toggling fullscreen:', error);
+    }
+  };
+
+  const exitFullscreen = () => {
+    if (isFullscreen.current) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      }
+      isFullscreen.current = false;
+    }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={containerRef}>
       <div className="relative rounded-lg overflow-hidden bg-gray-100">
         <video
           ref={videoRef}
-          className="w-full aspect-video object-cover"
-          style={{ display: isCameraActive ? 'block' : 'none' }}
+          className="w-full aspect-[4/3] object-cover"
+          style={{ 
+            display: isCameraActive ? 'block' : 'none',
+            maxHeight: '100vh'
+          }}
           playsInline
+          autoPlay
         />
         <canvas
           ref={canvasRef}
@@ -110,15 +163,47 @@ export function CameraCapture({
         />
         {!isCameraActive ? (
           <div className="p-8 text-center">
-            <Button onClick={handleImageCapture} variant="outline" className="w-full">
+            <Button 
+              onClick={handleImageCapture} 
+              variant="outline" 
+              className="w-full"
+              disabled={disabled}
+            >
               <Camera className="mr-2 h-4 w-4" />
               Open Camera
             </Button>
           </div>
         ) : (
-          <Button onClick={capturePhoto} className="w-full mt-4">
-            Take Photo
-          </Button>
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent">
+            <div className="flex justify-between items-center gap-4">
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="bg-white hover:bg-gray-100"
+                onClick={toggleFullscreen}
+              >
+                {isFullscreen.current ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+              <Button 
+                onClick={capturePhoto}
+                className="flex-1 bg-white hover:bg-gray-100 text-black"
+              >
+                Take Photo
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="bg-white hover:bg-gray-100"
+                onClick={stopCamera}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
